@@ -22,11 +22,12 @@
 #include "common.h"
 #include "nl6621_uart.h"
 
+#if NUAGENT_UART_SWITCH
+
 ring_buffer_t uartrxbuf;
 
 NST_TIMER * recv_timer;	/* receive timer */
 OS_EVENT * recv_sem;	/* receive sem */
-NST_LOCK * recv_lock;	/* receive lock */
    
 /* store data receive from uart, user can change the data store address.
  * */
@@ -106,7 +107,6 @@ void uart_init(void)
 	memset(recv_data, 0x0, sizeof(recv_data));
 
 	recv_sem = OSSemCreate(0);
-//	NST_ALLOC_LOCK(&recv_lock);
 
 	/* register receive timer */
     NST_InitTimer(&recv_timer, uart_recv_timer_handle, NULL, NST_TRUE);
@@ -142,12 +142,8 @@ void UartTaskThread(void *arg)
 		
 		if ((recv_size = ring_buf_cnt(&uartrxbuf)) > 0) {
 			/* get ring buffer data */
-//			NST_AQUIRE_LOCK(recv_lock);
-
 			memset(recv_data, 0x0, UART_RECV_BUF_SIZE);
 			ring_buf_read(&uartrxbuf, (char*)recv_data, recv_size);
-				
-//			NST_RELEASE_LOCK(recv_lock);
 
 			/* Print the data receive from uart */
 #if 1
@@ -161,3 +157,6 @@ void UartTaskThread(void *arg)
 		}
 	}
 }		/* -----  end of function UartTaskThread  ----- */
+
+
+#endif

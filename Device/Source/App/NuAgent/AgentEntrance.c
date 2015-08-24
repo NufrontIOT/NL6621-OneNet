@@ -23,7 +23,7 @@
 extern const INT8U FwVerNum[3];
 const INT8U NuAgentVerNum[3] = {
 	0x01,  /* Main version */ 
-	0x01,  /* Sub version */
+	0x02,  /* Sub version */
 	0x01   /* Internal version */
 };
 
@@ -72,12 +72,13 @@ void nl6621_main_entry(void * pParam)
 	sys_thread_new("OtherTaskThread", OtherTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 4));
 	sys_thread_new("SenserTaskThread", SenserTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 5));
 
+#if NUAGENT_UART_SWITCH
 	/* Do not open this task, unless you want to use wifi2uart function. */	
-//	sys_thread_new("UartTaskThread", UartTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 6));	
+	sys_thread_new("UartTaskThread", UartTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 6));	
+#endif
 
     while (1) {
-		/* user can add funcionality here. */
-		
+		/* user can add funcionality here. */		
 		/* User test case(code in ./sample/ cataloge) */
 
 	    OSTimeDly(400);

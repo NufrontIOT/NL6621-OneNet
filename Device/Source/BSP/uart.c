@@ -1,7 +1,9 @@
 #include "includes.h"
 #include "uart.h"
 
+#if NUAGENT_UART_SWITCH
 extern void uart_data_recv(unsigned char Dummy);
+#endif
 
 //#define PRINTF_TIME_OUT   2000
 
@@ -170,9 +172,7 @@ VOID BSP_UartISR(VOID)
                 Dummy = NST_RD_UART_REG(RBR_OFFSET);    // read receive buffer register & clear interrupt
                 //TODO:
                 //for UART interrupt test, print data, should be delete after test
-				#if 0
-                	BSP_UartPutcPolled(Dummy);
-				#else
+				#if NUAGENT_UART_SWITCH
 					uart_data_recv(Dummy);
 				#endif
 

@@ -1,4 +1,4 @@
-;#<FEEDBACK># ARM Linker, 4.1 [Build 481]: Last Updated: Mon Aug 24 09:44:44 2015
+;#<FEEDBACK># ARM Linker, 4.1 [Build 481]: Last Updated: Mon Aug 24 14:39:15 2015
 ;VERSION 0.2
 ;FILE agent_core.o
 ;FILE agententrance.o
@@ -25,6 +25,7 @@ base64_encode <= USED 0
 BSP_GlobalIrqIntDisable <= USED 0
 BSP_GlobalIrqIntEnable <= USED 0
 ;FILE bsp_mac.o
+BSP_GetLaunchTicks <= USED 0
 ;FILE cjson.o
 cJSON_AddItemReferenceToArray <= USED 0
 cJSON_AddItemReferenceToObject <= USED 0
@@ -136,7 +137,10 @@ BSP_GPIOIntEn <= USED 0
 BSP_GPIOIntISR <= USED 0
 BSP_GPIOIntMask <= USED 0
 ;FILE gpio_int.o
+gpio_int_disable <= USED 0
+gpio_int_enable <= USED 0
 gpio_int_setup <= USED 0
+gpio_num2irq <= USED 0
 ;FILE i2c.o
 BSP_I2CByteRead <= USED 0
 BSP_I2CByteWrite <= USED 0
@@ -172,13 +176,6 @@ atan_cordic <= USED 0
 fft_r4 <= USED 0
 ;FILE lan.o
 ;FILE log.o
-print <= USED 0
-printbin <= USED 0
-printch <= USED 0
-printdec <= USED 0
-printflt <= USED 0
-printhex <= USED 0
-printstr <= USED 0
 ;FILE lwip.o
 ;FILE lwip_init.o
 ;FILE mac_mng_main.o
@@ -197,10 +194,6 @@ ReadFlash <= USED 0
 debug_gagent_config_data <= USED 0
 nl6621_GetTime_MS <= USED 0
 nl6621_GetTime_S <= USED 0
-;FILE nl6621_uart.o
-UartTaskThread <= USED 0
-uart_data_send <= USED 0
-uart_init <= USED 0
 ;FILE ntp_client.o
 CloseSockfd <= USED 0
 ;FILE nvic.o
@@ -249,6 +242,7 @@ InfProtectModeSet <= USED 0
 InfScanStart <= USED 0
 InfSnifferStart <= USED 0
 InfSsidBrdcastSet <= USED 0
+InfSysTimeGet <= USED 0
 InfTxPwrLevelSet <= USED 0
 InfTxRateSet <= USED 0
 InfVendorIESet <= USED 0
@@ -259,19 +253,24 @@ InfWmmEnableSet <= USED 0
 BSP_QSpiDirectReadInit <= USED 0
 ;FILE raw.o
 ;FILE rf.o
+BSP_PhyInit <= USED 0
+Bsp_NU680XCfgPhyChnl <= USED 0
 RF_CfgTestMode <= USED 0
 ;FILE rf_spi.o
 BSP_RfSpiWriteWord <= USED 0
 ;FILE ring_buffer.o
 ring_buf_alloc <= USED 0
 ring_buf_clear <= USED 0
+ring_buf_cnt <= USED 0
 ring_buf_cnt_to_end <= USED 0
 ring_buf_empty <= USED 0
 ring_buf_free <= USED 0
+ring_buf_full <= USED 0
 ring_buf_read <= USED 0
 ring_buf_space <= USED 0
 ring_buf_space_to_end <= USED 0
 ring_buf_write <= USED 0
+ring_buf_write_char <= USED 0
 ;FILE rom_hook_tbl.o
 ;FILE rx.o
 NST_CheckEncryptReplayCounter <= USED 0
@@ -286,11 +285,6 @@ NST_RxTaskDeInit <= USED 0
 NST_RxTaskInit <= USED 0
 ;FILE sdio.o
 ;FILE sensors.o
-;FILE simu_uart.o
-SimuSendOneByte <= USED 0
-simu_uart_init <= USED 0
-simu_uart_rx_init <= USED 0
-simu_uart_tx_init <= USED 0
 ;FILE sockets.o
 ;FILE spi.o
 BSP_SpiInit <= USED 0
@@ -298,7 +292,6 @@ BSP_SpiRead <= USED 0
 BSP_SpiWait <= USED 0
 BSP_SpiWriteByte <= USED 0
 ;FILE sta_assoc.o
-MlmeDisassocReqAction <= USED 0
 ;FILE sta_auth.o
 MlmeDeauthReqAction <= USED 0
 ;FILE sta_auth_rsp.o
@@ -331,6 +324,7 @@ TestJson <= USED 0
 TestMain <= USED 0
 ;FILE timer.o
 BSP_Timer0Init <= USED 0
+BSP_Timer1Init <= USED 0
 ;FILE timers.o
 ;FILE tx.o
 NST_GetTXBDQueInfo <= USED 0

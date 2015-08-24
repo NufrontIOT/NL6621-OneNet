@@ -145,6 +145,8 @@ void SenserTaskThread(void *arg)
 	int fault_cnt = 0;
 	char *ups_status[3] = {"Work on normal", "Work on charging", "Work on discharging"};
 	char *ups_fault[3] = {"Normal", "Outage", "RunOut"};
+	char *intrusion_detect = "Unmanned";
+	char *smoke_detect = "Smokeless";
 
 	/* 阻塞等待与Onnet连接成功 */
 	while (SensorTaskFlag == 0) { 
@@ -163,7 +165,7 @@ void SenserTaskThread(void *arg)
         OSTimeDly(10);
 		SendSensorData("humidity", &humi, DATATYPE_DOUBLE);
 		OSTimeDly(10);
-#if 1
+
 		GetVCData(&voltage, &current, &power);
         SendSensorData("voltage", &voltage, DATATYPE_DOUBLE);
 		OSTimeDly(10);
@@ -180,6 +182,13 @@ void SenserTaskThread(void *arg)
         SendSensorData("ups-status", ups_status[status_cnt], DATATYPE_STRING);
 		OSTimeDly(10);
         SendSensorData("ups-fault", ups_fault[fault_cnt], DATATYPE_STRING);
+
+#if 1
+		/* 更新入侵监测 */
+		OSTimeDly(10);
+        SendSensorData("intrusion-detect", intrusion_detect, DATATYPE_STRING);
+		OSTimeDly(10);
+        SendSensorData("smoke-detect", smoke_detect, DATATYPE_STRING);
 #endif		
 		PrintGMTTime();
 		OSTimeDly(500);

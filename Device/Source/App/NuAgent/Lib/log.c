@@ -22,6 +22,7 @@
 #include "common.h"
 #include "log.h"
 
+#if NUAGENT_UART_SWITCH
 void printch(char ch)
 {
     SimuSendOneByte(ch);
@@ -152,6 +153,7 @@ void print(char* fmt, ...)
     }
     va_end(vp);
 }
+#endif
 
 
 void dump_hex(unsigned char *str, unsigned int len)

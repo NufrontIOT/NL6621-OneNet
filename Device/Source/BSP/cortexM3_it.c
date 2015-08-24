@@ -23,8 +23,10 @@
 
 extern VOID BSP_LowMacIntISR(VOID);
 
+#if NUAGENT_UART_SWITCH
 extern void gpio_int_func(int portNum);
 extern int simu_uart_timer_task(void);
+#endif
 
 /*******************************************************************************
 * Function Name  : NMIException
@@ -267,7 +269,9 @@ __irq void EXTI2_IRQHandler(void)
 *******************************************************************************/
 __irq void EXTI3_IRQHandler(void)
 {
+#if NUAGENT_UART_SWITCH
 	gpio_int_func(3);
+#endif
 }
 
 /*******************************************************************************
@@ -300,7 +304,9 @@ __irq void EXTI5_IRQHandler(void)
 *******************************************************************************/
 __irq void EXTI6_IRQHandler(void)
 {
+#if NUAGENT_UART_SWITCH
 	gpio_int_func(6);
+#endif
 }
 /*******************************************************************************
 * Function Name  : EXTI7_IRQHandler
@@ -337,8 +343,9 @@ __irq void TMR1_IRQHandler(void)
     RegEoi = *TmrsEoi;
     RegEoi = RegEoi;
 
+#if NUAGENT_UART_SWITCH
 	simu_uart_timer_task();
-
+#endif
 
    // ¿ªÖÐ¶Ï
     NVIC_EnableIRQ(TMR1_IRQn);
@@ -494,7 +501,9 @@ __irq void I2S_IRQHandler(void)
 }
 __irq void EXTI16_31_IRQnHandler(void)
 {
+#if NUAGENT_UART_SWITCH
 //	gpio_int_func(29);
+#endif
 }
 __irq void DUMMY1_IRQHandler(void)
 {}

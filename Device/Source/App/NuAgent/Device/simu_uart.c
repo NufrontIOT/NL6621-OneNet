@@ -21,6 +21,8 @@
 #include "common.h"
 #include "simu_uart.h"
 
+#if NUAGENT_UART_SWITCH
+
 #define UART_REAL_PIN    	0
 
 #define IRDA_DATA_MAX_LEN		(116)
@@ -137,7 +139,7 @@ void gpio_int_func(int portNum)
     /* disable gpio interrupt */
 	gpio_int_disable(SIMU_UART_RX_PIN);
 
-//	SIMU_UART_RX_INPUT();
+	SIMU_UART_RX_INPUT();
 	gpio_value = BSP_GPIOGetValue(SIMU_UART_RX_PIN);
 	if (gpio_value == 0) {
 		/* Start timer1 */
@@ -157,3 +159,4 @@ void simu_uart_init(void)
 	simu_uart_tx_init();
 }
 
+#endif

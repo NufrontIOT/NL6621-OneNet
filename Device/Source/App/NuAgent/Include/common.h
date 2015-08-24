@@ -77,6 +77,12 @@
 #endif
 
 
+/*******************************************/
+/********   Module switch MACRO    *********/
+/*******************************************/
+#define NUAGENT_UART_SWITCH					(0)	 	/* System uart(included simulater) switch macro */
+
+
 #define GAGENT_FEATURE_OTA 					(0)
 
 #define USER_GPIO_IDX_LED   				(9)		/* System led indicator. 4:for develop board, 9:for NF-210S */
