@@ -49,6 +49,7 @@ static unsigned int domain_flag = 0;
 #define CLOUD_SERVER_PORT_NUM		(876)
 static int TCPClientFd = -1;
 NST_LOCK *cloud_send_mutex_lock = NULL;	/* cloud send data mutex lock */
+static unsigned int TCPClient_reset_flag = 0;
 
 
 /* 
@@ -175,6 +176,7 @@ AGAIN:
         return -1;
     }
 
+	TCPClient_reset_flag = 0;
 	return 0;
 }
 
@@ -183,6 +185,7 @@ int Socket_TCPClientSendData(char *sendbuf,	unsigned int len)
     int32 total  = 0;                                                                 
     int32 n = 0;
 	uint8 err = 0;
+	static int cloud_error_cnt = 0;
 	
 	OSMutexPend(cloud_send_mutex_lock, 0, &err);
     while (len != total)                                                              
@@ -192,6 +195,11 @@ int Socket_TCPClientSendData(char *sendbuf,	unsigned int len)
         {
             log_err("Send TCP client data(len:%d, total:%d) ERROR.\n", len, total);
 			OSMutexPost(cloud_send_mutex_lock);
+			/* if send time error more than 5 timse, reset tcp connection */
+			cloud_error_cnt++;
+			if (cloud_error_cnt > 5) {
+				TCPClient_reset_flag = 0xa5;
+			}
             return n;
         }                                                    
         total += n;
@@ -214,7 +222,8 @@ int Socket_TCPClientRecvData(char *recvbuf, int len)
 	FD_ZERO (&readfds);
 	FD_SET (TCPClientFd, &readfds);
     
-	if (select((TCPClientFd + 1), &readfds, NULL, NULL, &tmv) == -1)
+	if ((select((TCPClientFd + 1), &readfds, NULL, NULL, &tmv) == -1)
+			 || (TCPClient_reset_flag == 0xa5))
     {      
 	    return -1;
     }
