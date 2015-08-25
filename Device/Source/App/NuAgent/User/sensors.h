@@ -24,7 +24,7 @@
 #define __SENSORS_H__
 
 void SenserTaskThread(void *arg);
-
+void HeartBeatThread(void *arg);
 
 #endif
 

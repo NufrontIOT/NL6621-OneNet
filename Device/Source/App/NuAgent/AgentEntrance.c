@@ -56,7 +56,7 @@ void nl6621_main_entry(void * pParam)
 	/* Create system indicator LED task thread */
 	sys_status.status = SYS_STATUS_WIFI_STOP;
 	sys_status.onboarding = SYS_STATUS_ONBOARDING_FAILED;		
-	sys_thread_new("SysIdxLedThread", SysIdxLedThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 7));
+	sys_thread_new("SysIdxLedThread", SysIdxLedThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 8));
 	sys_thread_new("SysResetThread", SysResetThread, NULL, NST_TEST_APP_TASK_STK_SIZE, prioUser);
 
 	/* initialize GAgent resource */
@@ -76,6 +76,8 @@ void nl6621_main_entry(void * pParam)
 	/* Do not open this task, unless you want to use wifi2uart function. */	
 	sys_thread_new("UartTaskThread", UartTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 6));	
 #endif
+
+	sys_thread_new("HeartBeatThread", HeartBeatThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 7));	
 
     while (1) {
 		/* user can add funcionality here. */		

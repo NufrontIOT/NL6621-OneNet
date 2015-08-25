@@ -33,7 +33,6 @@ enum DATATYPE {
 
 
 unsigned char SensorTaskFlag = 0;
-NST_TIMER * Heartbeat_timer;		/* receive timer */
 extern CLOUD_CONN_VAL_G cloud_conn_status;
 
 
@@ -153,50 +152,48 @@ void SenserTaskThread(void *arg)
 		OSTimeDly(100);
 	}
 
-	/* 启动心跳和数据更新定时器 */
-	NST_SetTimer(Heartbeat_timer, CLOUD_HEARTBEAT_NUM);			
-	log_debug("start soft timer success.\n");
-
-
 	while (1) {
 		/* 温湿度数据更新上传 */
 		GetTHData(&temp, &humi);
         SendSensorData("temperature", &temp, DATATYPE_DOUBLE);
-        OSTimeDly(10);
+        OSTimeDly(30);
 		SendSensorData("humidity", &humi, DATATYPE_DOUBLE);
-		OSTimeDly(10);
+		OSTimeDly(30);
 
 		GetVCData(&voltage, &current, &power);
         SendSensorData("voltage", &voltage, DATATYPE_DOUBLE);
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("current", &current, DATATYPE_DOUBLE);
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("power", &power, DATATYPE_DOUBLE);
-		OSTimeDly(10);
+		OSTimeDly(30);
 
 		GetUPSData(&ups_energy, &status_cnt, &fault_cnt);
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("ups-energy", &ups_energy, DATATYPE_INT);
 
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("ups-status", ups_status[status_cnt], DATATYPE_STRING);
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("ups-fault", ups_fault[fault_cnt], DATATYPE_STRING);
 
 #if 1
 		/* 更新入侵监测 */
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("intrusion-detect", intrusion_detect, DATATYPE_STRING);
-		OSTimeDly(10);
+		OSTimeDly(30);
         SendSensorData("smoke-detect", smoke_detect, DATATYPE_STRING);
 #endif		
 		PrintGMTTime();
-		OSTimeDly(500);
+		OSTimeDly(700);
 	}
 }
 
-void dev_cloud_init(void)
+void HeartBeatThread(void *arg)
 {
-	/* 创建两个定时器，用于定时发送心跳包，以及定时更新传感器数据 */	
-	NST_InitTimer(&Heartbeat_timer, cloud_heartbeat_timer_handle, NULL, NST_TRUE);	
+	while (1)
+	{
+		cloud_heartbeat_timer_handle(NULL, NULL);
+		OSTimeDly(CLOUD_HEARTBEAT_NUM/10);
+	}
 }

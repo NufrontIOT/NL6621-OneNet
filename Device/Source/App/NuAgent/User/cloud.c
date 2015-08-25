@@ -29,8 +29,6 @@ char * send_buf = NULL;
 CLOUD_CONN_VAL_G cloud_conn_status;
 
 extern unsigned char SensorTaskFlag;
-extern void dev_cloud_init(void);
-
 
 void recv_data_process(char * buffer, int len)
 {
@@ -140,9 +138,6 @@ AGAIN:
 
 void Agent_cloud_init(void)
 {
-	/* 初始化设备端cloud资源 */
-	dev_cloud_init();
-
 	/* 分配接收数据和发送数据的内存块 */
 	recv_buf = malloc(CLOUD_RECV_BUFFER_SIZE);
 	send_buf = malloc(CLOUD_SEND_BUFFER_SIZE);
