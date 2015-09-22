@@ -139,7 +139,7 @@ VOID BSP_UartISR(VOID)
 {
     INT8U     IIRValue;
     INT8U     LSRValue;
-    INT8U     Dummy = 0;
+    volatile  INT8U     Dummy = 0;
     BOOLEAN   bFlag = TRUE;
 
     OSIntEnter();

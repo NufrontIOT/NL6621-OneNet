@@ -692,7 +692,7 @@ INT32 InfDeepSleepSet(UINT32 WakeUpMode)
 		get rssi of peer terminal
 		
 	Arguments:
-		pMacAddr - Mac address
+		pMacAddr - Mac address, if set null, the rssi of associated ap will be returned in sta mode
 		
 	Return Value:
 		0 - failure
@@ -701,10 +701,7 @@ INT32 InfDeepSleepSet(UINT32 WakeUpMode)
 -------------------------------------------------------------------------*/
 INT8 InfPeerRssiGet(UINT8 pMacAddr[6] )
 {	
-    if (pMacAddr == NULL)
-        return 0;
-    else
-        return MlmeGetRssi(pMacAddr);	  
+    return MlmeGetRssi(pMacAddr);	  
 }
 
 /*   InfCurChGet   */

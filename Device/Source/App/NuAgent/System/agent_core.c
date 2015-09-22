@@ -71,7 +71,7 @@ void SysIdxLedThread(void *arg)
 				break;
 
 			case SYS_STATUS_WIFI_STA_CONNECTED:
-				update_led_indicator(100, 100);
+				update_led_indicator(3, 3);
 				break;
 
 			case SYS_STATUS_WIFI_STA_LOGIN:
@@ -257,7 +257,8 @@ void TcpCloudThread(void *arg)
 			} 
 		}
 
-		ret = Agent_cloud_process();
+	    ret = Agent_cloud_process();
+	
     }
 }		/* -----  end of function TcpCloudThread  ----- */
 

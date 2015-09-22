@@ -21,31 +21,67 @@
  */
 #include "common.h"
 #include "cloud.h"
-#include "Onenet_comm.h"
 #include "EdpKit.h"
+#include "restful.h"
+#include "onenet_comm.h"
 
 char * recv_buf = NULL;
 char * send_buf = NULL;
 CLOUD_CONN_VAL_G cloud_conn_status;
 
 extern unsigned char SensorTaskFlag;
+extern unsigned char TCPClient_reset_flag;
+
+
+#ifndef  Devid_RestFul
 
 void recv_data_process(char * buffer, int len)
 {
     int rtn;
     uint8 mtype;
-    RecvBuffer* recvbuf = NULL;
     EdpPacket* pkg;
 
-	log_info("Recv data(len:%d).\n", len);
+    //LOUIS add
+	uint8 jsonorbin;
+    char* src_devid;
+    cJSON* save_json;
+    char* save_json_str;
 
-	recvbuf = NewBuffer();
-    WriteBytes(recvbuf, buffer, len);
+    cJSON* desc_json;
+    char* desc_json_str;
+    char* save_bin; 
+    uint32 save_binlen;
+    char* json_ack;
+
+
+    char* push_data;
+    uint32 push_datalen;
+
+    char* cmdid;
+    uint16 cmdid_len;
+    char*  cmd_req;
+    uint32 cmd_req_len;
+    EdpPacket* send_pkg;
+//    char* ds_id;
+//    double dValue = 0;
+
+    char* simple_str = NULL;
+    char cmd_resp[] = "ok";
+    unsigned cmd_resp_len = 0;
+
+    RecvBuffer recvbuf;
+
+    recvbuf._data = (uint8*)buffer;
+    recvbuf._write_pos = len;
+    recvbuf._read_pos = 0;
+    recvbuf._capacity = BUFFER_SIZE;
+
+	log_info("Recv data(len:%d).\n", len);
 
     while (1)
     {
         /* 获取一个完成的EDP包 */
-        if ((pkg = GetEdpPacket(recvbuf)) == 0)
+        if ((pkg = GetEdpPacket(&recvbuf)) == 0)
         {
             log_info("need more bytes...\n");
             break;
@@ -65,73 +101,172 @@ void recv_data_process(char * buffer, int len)
 				cloud_conn_status.conn_status = CLOUD_CONN_DONE;
 				
                 break;
+
             case PINGRESP:
                 /* 解析EDP包 - 心跳响应 */
                 UnpackPingResp(pkg); 
                 log_info("recv ping resp\n");
                 break;
+
             case PUSHDATA:
                 /* 解析EDP包 - 数据转发 */
+                UnpackPushdata(pkg, &src_devid, &push_data, &push_datalen);
+                log_info("recv push data, src_devid: %s, push_data: %s, len: %d\n", 
+                        src_devid, push_data, push_datalen);
+                free(src_devid);
+                free(push_data);
                 break;
+
             case SAVEDATA:
+                /* 解析EDP包 - 数据存储 */
+                 if (UnpackSavedata(pkg, &src_devid, &jsonorbin) == 0)
+                 {
+                      if (jsonorbin == kTypeFullJson 
+						    || jsonorbin == kTypeSimpleJsonWithoutTime
+						    || jsonorbin == kTypeSimpleJsonWithTime) 
+						    {
+							     printf("json type is %d\n", jsonorbin);
+					             /* 解析EDP包 - json数据存储 */ 
+	                             UnpackSavedataJson(pkg, &save_json); 
+	                             save_json_str = cJSON_Print(save_json);
+	                             log_info("recv save data json, src_devid: %s, json: %s\n", 
+	                                 src_devid, save_json_str); 
+	                             free(save_json_str); 
+	                             cJSON_Delete(save_json); 
+
+								/* UnpackSavedataInt(jsonorbin, pkg, &ds_id, &iValue); */
+								/* log_info("ds_id = %s\nvalue= %d\n", ds_id, iValue); */
+				
+								//UnpackSavedataDouble((SaveDataType)jsonorbin, pkg, &ds_id, &dValue);
+								//log_info("ds_id = %s\nvalue = %f\n", ds_id, dValue);
+				
+								/* UnpackSavedataString(jsonorbin, pkg, &ds_id, &cValue); */
+								/* log_info("ds_id = %s\nvalue = %s\n", ds_id, cValue); */
+								/* free(cValue); */
+
+								//free(ds_id);
+                        }
+		                else if (jsonorbin == kTypeBin)
+		                {/* 解析EDP包 - bin数据存储 */
+		                    UnpackSavedataBin(pkg, &desc_json, (uint8**)&save_bin, &save_binlen);
+		                    desc_json_str=cJSON_Print(desc_json);
+		                    log_info("recv save data bin, src_devid: %s, desc json: %s, bin: %s, binlen: %d\n", 
+		                            src_devid, desc_json_str, save_bin, save_binlen);
+		                    free(desc_json_str);
+		                    cJSON_Delete(desc_json);
+		                    free(save_bin);
+		                }
+		             	else if (jsonorbin == kTypeString){
+						    UnpackSavedataSimpleString(pkg, &simple_str);
+						    
+						    log_info("%s\n", simple_str);
+						    free(simple_str);
+						}
+		                free(src_devid);
+	            	}else{
+						printf("error\n");
+					}
+
+                    break;
+
             case SAVEACK:
+				json_ack = NULL;
+				UnpackSavedataAck(pkg, &json_ack);
+				log_info("save json ack = %s\n", json_ack);
+				free(json_ack);
+				break;
+
             case CMDREQ:
+			    log_info("recevice server cmd:\r\n");
+				dump_hex(pkg->_data, pkg->_write_pos);
+			 	if (UnpackCmdReq(pkg, &cmdid, &cmdid_len, 
+							 &cmd_req, &cmd_req_len) == 0){
+					    /* 
+					     * 用户按照自己的需求处理并返回，响应消息体可以为空，此处假设返回2个字符"ok"。
+					     * 处理完后需要释放
+					     */
+					    cmd_resp_len = strlen(cmd_resp);
+					    send_pkg = PacketCmdResp(cmdid, cmdid_len,
+								     cmd_resp, cmd_resp_len);
+			#ifdef _ENCRYPT
+					    if (g_is_encrypt){
+						SymmEncrypt(send_pkg);
+					    }
+			#endif
+					    Socket_TCPClientSendData((char*)send_pkg->_data, send_pkg->_write_pos);
+					    DeleteBuffer(&send_pkg);
+					    
+					    free(cmdid);
+					    free(cmd_req);
+					}
+					break;
+
             default:
                 /* 未知消息类型 */
-//                log_info("recv failed...\n");
+                log_info("recv failed...\n");
                 break;
         }
         DeleteBuffer(&pkg);
     }
-    DeleteBuffer(&recvbuf);
 }
+
+#endif
 
 int Agent_cloud_process(void)
 {
 	EdpPacket* connect_pkg = NULL;
-    int failedcnt = 0;
-	int ret, errorcnt = 0;
+	int ret;
+	unsigned char failedcnt = 0;
 
 	cloud_conn_status.conn_status = SOCK_DONE;
 
-AGAIN:    
-	/* 向Onenet服务器发送EDP连接报文 */
-	connect_pkg = PacketConnect1((char*)SRC_DEVID, (char*)CLOUD_API_KEY);
+	#ifndef   Devid_RestFul
+		AGAIN:    
+			/* 向Onenet服务器发送EDP连接报文 */
+			connect_pkg = PacketConnect1((char*)SRC_DEVID, (char*)CLOUD_API_KEY);
+		
+			/* dump package data */
+			log_info("Packet connect data(len:%d):\n", connect_pkg->_write_pos);
+			dump_hex(connect_pkg->_data, connect_pkg->_write_pos);
+			log_info("SRC_DEVID:%s CLOUD_API_KEY:%s\r\n",SRC_DEVID,CLOUD_API_KEY);
+		
+			ret = Socket_TCPClientSendData((char *)connect_pkg->_data, connect_pkg->_write_pos);
+			DeleteBuffer(&connect_pkg);
+			if (ret < 0) {
+				cloud_conn_status.conn_status = CLOUD_CONN_ERROR;
+				log_info("Send connect data failed(ret:%d).\n", ret);
+		        failedcnt++;
+		        /* 发送连接次数超过3次则退出连接 */
+		        if (failedcnt > 3) {
+		            Socket_TCPClientClose();
+		            return -1;
+		        }
+		        OSTimeDly(50);
+				goto AGAIN;
+			} else {
+				log_notice("Send connect data success.\n");
+			}
+	#endif
 
-	/* dump package data */
-	log_info("Packet connect data(len:%d):\n", connect_pkg->_write_pos);
-	dump_hex(connect_pkg->_data, connect_pkg->_write_pos);
-
-	ret = Socket_TCPClientSendData((char *)connect_pkg->_data, connect_pkg->_write_pos);
-	DeleteBuffer(&connect_pkg);
-	if (ret < 0) {
-		cloud_conn_status.conn_status = CLOUD_CONN_ERROR;
-		log_info("Send connect data failed(ret:%d).\n", ret);
-        failedcnt++;
-        /* 发送连接次数超过3次则退出连接 */
-        if (failedcnt > 3) {
-            Socket_TCPClientClose();
-            return -1;
-        }
-        OSTimeDly(50);
-		goto AGAIN;
-	} else {
-		log_notice("Send connect data success.\n");
-	}
 
 	/* 主进程用于接收云端服务器的数据 */
 	while (1)
 	{
 		ret = Socket_TCPClientRecvData(recv_buf, CLOUD_RECV_BUFFER_SIZE);
 		if (ret > 0) {
-            recv_data_process(recv_buf, ret);
-		} else if (ret < 0) {
+			recv_buf[ret] = '\0';
+			#if   (4 & Devid_Mode) //restful方式
+			   log_notice("%s\r\n",recv_buf);
+			   RestFul_RecvProcess(recv_buf,ret);
+			#else
+               recv_data_process(recv_buf, ret);
+			#endif
+		}
+		
+		if (ret < 0 || TCPClient_reset_flag == 0xa5 ) {  //关闭TCP链接
 			log_err("Recv tcp client data error(%d)\n", ret);
-			errorcnt++;
-			if (errorcnt > 5) {
-				Socket_TCPClientClose();
-				return -1;
-			}
+			Socket_TCPClientClose();
+			return -1;
 		}
 	}
 }

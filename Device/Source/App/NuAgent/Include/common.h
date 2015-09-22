@@ -66,6 +66,7 @@
 #include "cloud.h"
 #include "lan.h"
 #include "sensors.h"
+#include "onenet_comm.h"
 
 #if 1
 #define malloc 		OSMMalloc

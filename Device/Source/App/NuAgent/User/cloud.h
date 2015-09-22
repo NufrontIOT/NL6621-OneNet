@@ -22,10 +22,10 @@
 #ifndef __CLOUD_H__
 #define __CLOUD_H__
 
-#define CLOUD_HEARTBEAT_NUM  		(10 * 1000)
+#define CLOUD_HEARTBEAT_NUM  		(20 * 1000)//20S,单位ms，最小值10
 
-#define CLOUD_RECV_BUFFER_SIZE		(1500)
-#define CLOUD_SEND_BUFFER_SIZE		(1500)
+#define CLOUD_RECV_BUFFER_SIZE		(2500)
+#define CLOUD_SEND_BUFFER_SIZE		(2500)
 
 
 /* 保存云端连接使用的全局变量和状态 */

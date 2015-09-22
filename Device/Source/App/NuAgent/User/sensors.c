@@ -22,7 +22,6 @@
 
 #include "common.h"
 #include "sensors.h"
-#include "Onenet_comm.h"
 #include "EdpKit.h"
 
 enum DATATYPE {
@@ -31,9 +30,15 @@ enum DATATYPE {
     DATATYPE_STRING,
 };
 
+#ifdef  DEVID2 /* Dev2 */
+unsigned char MyMacID[6]={0x61,0x34,0x55,0x55,0x66,0x66};
+#else  /* Dev1 */
+unsigned char MyMacID[6]={0x61,0x34,0x44,0x44,0x55,0x55};
+#endif
 
 unsigned char SensorTaskFlag = 0;
 extern CLOUD_CONN_VAL_G cloud_conn_status;
+extern unsigned char TCPClient_reset_flag;
 
 
 int GetTHData(double *temp, double *humi)
@@ -41,7 +46,7 @@ int GetTHData(double *temp, double *humi)
 	*temp = make_rand(22, 30);
 	*humi = make_rand(60, 70);
 
-	log_debug("Temp:%lf, Humi:%lf\n", *temp, *humi);
+	log_debug("Temp:%f, Humi:%f\n", *temp, *humi);
 	
 	return 0;
 }
@@ -67,38 +72,104 @@ int GetUPSData(int *energy, int *status_cnt, int *error_cnt)
 	
 	return 0;
 }
+//
+//EDP协议实现数据上传
+//
+#ifdef  Data_Upload
+	int SensorData_Upload(char *dataPoint, void* value, unsigned char datatype)
+	{
+		int ret = 0;
+	    EdpPacket* update_pkg;
+			   
+	    switch (datatype) {
+	        default:
+	        case DATATYPE_INT:
+	            update_pkg = PacketSavedataInt(kTypeFullJson, SRC_DEVID, dataPoint, *(int*)value, 0, EDP_TOKEN); 
+	            break;
+	        case DATATYPE_DOUBLE:
+	            update_pkg = PacketSavedataDouble(kTypeFullJson, SRC_DEVID, dataPoint, *(double*)value, 0, EDP_TOKEN); 
+	            break;
+	        case DATATYPE_STRING:
+	            update_pkg = PacketSavedataString(kTypeFullJson, SRC_DEVID, dataPoint, (const char*)value, 0, EDP_TOKEN); 
+	            break;
+	    }
+		OSTimeDly(10);
+	
+	    /* 发送转存数据到OneNet并转发到Dev2设备 */
+	    ret = Socket_TCPClientSendData((char*)update_pkg->_data, update_pkg->_write_pos);
+		
+	    if (ret <= 0) {
+	        log_info("Save and transmit full json data failed(ret:%d).\n", ret);
+	    } else {
+	        log_notice("Save and transmit full json data success.\n");
+	    }	
+	    DeleteBuffer(&update_pkg);
+	
+	    return 0;
+	}
+#endif
+//  
+//EDP协议实现设备间数据的转发
+//
+#ifdef  Devid_PassThrough
+	int SensorData_PassThrough(char *dest, void* data, unsigned char datalen)
+	{
+		int ret = 0;
+	    EdpPacket* update_pkg;
+	 
+	    //透传数据，设备1传给设备2
+		update_pkg = PacketPushdata(dest, data, datalen); 
+		//dump_hex(update_pkg->_data, update_pkg->_write_pos);
+	    /* 发送转存数据到OneNet并转发到Dev2设备 */
+	    ret = Socket_TCPClientSendData((char*)update_pkg->_data, update_pkg->_write_pos);
+	
+	    if (ret <= 0) {
+	        log_info("Pass through and transmit full json data failed(ret:%d).\n", ret);
+	    } else {
+	        log_notice("Pass through and transmit full json data success.\n");
+	    }	
+	    DeleteBuffer(&update_pkg);
+	
+	    return 0;
+	}
+#endif
+//
+//储存云端++设备之间透传
+//
+#ifdef   Devid_ALL
+	int SensorData_UploadPass(char *dataPoint, void* value, unsigned char datatype)
+	{
+		int ret = 0;
+	    EdpPacket* update_pkg;
+			   
+	    switch (datatype) {
+	        default:
+	        case DATATYPE_INT:
+	            update_pkg = PacketSavedataInt(kTypeFullJson, DEST_DEVID, dataPoint, *(int*)value, 0, EDP_TOKEN); 
+	            break;
+	        case DATATYPE_DOUBLE:
+	            update_pkg = PacketSavedataDouble(kTypeFullJson, DEST_DEVID, dataPoint, *(double*)value, 0, EDP_TOKEN); 
+	            break;
+	        case DATATYPE_STRING:
+	            update_pkg = PacketSavedataString(kTypeFullJson, DEST_DEVID, dataPoint, (const char*)value, 0, EDP_TOKEN); 
+	            break;
+	    }
+		OSTimeDly(10);
+	
+	    /* 发送转存数据到OneNet并转发到Dev2设备 */
+	    ret = Socket_TCPClientSendData((char*)update_pkg->_data, update_pkg->_write_pos);
+		
+	    if (ret <= 0) {
+	        log_info("Save and transmit full json data failed(ret:%d).\n", ret);
+	    } else {
+	        log_notice("Save and transmit full json data success.\n");
+	    }	
+	    DeleteBuffer(&update_pkg);
+	
+	    return 0;
+	}
+#endif
 
-int SendSensorData(char *dataPoint, void* value, unsigned char datatype)
-{
-	int ret = 0;
-    EdpPacket* update_pkg;
-    
-    switch (datatype) {
-        default:
-        case DATATYPE_INT:
-            update_pkg = PacketSavedataInt(kTypeFullJson, SRC_DEVID, dataPoint, *(int*)value, 0, NULL); 
-            break;
-        case DATATYPE_DOUBLE:
-            update_pkg = PacketSavedataDouble(kTypeFullJson, SRC_DEVID, dataPoint, *(double*)value, 0, NULL); 
-            break;
-        case DATATYPE_STRING:
-            update_pkg = PacketSavedataString(kTypeFullJson, SRC_DEVID, dataPoint, (const char*)value, 0, NULL); 
-            break;
-    }
-	OSTimeDly(10);
-
-    /* 发送转存数据到OneNet并转发到Dev2设备 */
-    ret = Socket_TCPClientSendData((char*)update_pkg->_data, update_pkg->_write_pos);
-    if (ret <= 0) {
-        log_info("Save and transmit full json data failed(ret:%d).\n", ret);
-    } else {
-        log_notice("Save and transmit full json data success.\n");
-    }	
-    DeleteBuffer(&update_pkg);
-	OSTimeDly(10);
-
-    return 0;
-}
 
 
 /*
@@ -147,48 +218,90 @@ void SenserTaskThread(void *arg)
 	char *intrusion_detect = "Unmanned";
 	char *smoke_detect = "Smokeless";
 
-	/* 阻塞等待与Onnet连接成功 */
-	while (SensorTaskFlag == 0) { 
-		OSTimeDly(100);
-	}
+	#ifndef  Devid_RestFul //restful方式
+		/* 阻塞等待与Onnet连接成功 */
+		while (SensorTaskFlag == 0) { 
+			OSTimeDly(100);
+		}
+	#endif
+
 
 	while (1) {
 		/* 温湿度数据更新上传 */
+#ifdef  Data_Upload	//设备上传数据
+
 		GetTHData(&temp, &humi);
-        SendSensorData("temperature", &temp, DATATYPE_DOUBLE);
+        SensorData_Upload("temperature", &temp, DATATYPE_DOUBLE);
         OSTimeDly(30);
-		SendSensorData("humidity", &humi, DATATYPE_DOUBLE);
+		SensorData_Upload("humidity", &humi, DATATYPE_DOUBLE);
 		OSTimeDly(30);
 
 		GetVCData(&voltage, &current, &power);
-        SendSensorData("voltage", &voltage, DATATYPE_DOUBLE);
+        SensorData_Upload("voltage", &voltage, DATATYPE_DOUBLE);
 		OSTimeDly(30);
-        SendSensorData("current", &current, DATATYPE_DOUBLE);
+        SensorData_Upload("current", &current, DATATYPE_DOUBLE);
 		OSTimeDly(30);
-        SendSensorData("power", &power, DATATYPE_DOUBLE);
+        SensorData_Upload("power", &power, DATATYPE_DOUBLE);
 		OSTimeDly(30);
 
 		GetUPSData(&ups_energy, &status_cnt, &fault_cnt);
 		OSTimeDly(30);
-        SendSensorData("ups-energy", &ups_energy, DATATYPE_INT);
+        SensorData_Upload("ups-energy", &ups_energy, DATATYPE_INT);
 
 		OSTimeDly(30);
-        SendSensorData("ups-status", ups_status[status_cnt], DATATYPE_STRING);
+        SensorData_Upload("ups-status", ups_status[status_cnt], DATATYPE_STRING);
 		OSTimeDly(30);
-        SendSensorData("ups-fault", ups_fault[fault_cnt], DATATYPE_STRING);
+        SensorData_Upload("ups-fault", ups_fault[fault_cnt], DATATYPE_STRING);
 
-#if 1
 		/* 更新入侵监测 */
 		OSTimeDly(30);
-        SendSensorData("intrusion-detect", intrusion_detect, DATATYPE_STRING);
+        SensorData_Upload("intrusion-detect", intrusion_detect, DATATYPE_STRING);
 		OSTimeDly(30);
-        SendSensorData("smoke-detect", smoke_detect, DATATYPE_STRING);
-#endif		
+        SensorData_Upload("smoke-detect", smoke_detect, DATATYPE_STRING);
+		OSTimeDly(200);
+
+#endif 
+
+#ifdef SensorData_UploadPass //设备上传与透传数据给云端
+
+	    GetTHData(&temp, &humi);
+        SensorData_UploadPass("temperature", &temp, DATATYPE_DOUBLE);
+        OSTimeDly(30);
+		SensorData_UploadPass("humidity", &humi, DATATYPE_DOUBLE);
+		OSTimeDly(30);
+
+		GetVCData(&voltage, &current, &power);
+        SensorData_UploadPass("voltage", &voltage, DATATYPE_DOUBLE);
+		OSTimeDly(30);
+        SensorData_UploadPass("current", &current, DATATYPE_DOUBLE);
+		OSTimeDly(30);
+        SensorData_UploadPass("power", &power, DATATYPE_DOUBLE);
+		OSTimeDly(30);
+
+#endif
+
+
+#ifdef  Devid_PassThrough //设备转发数据
+
+		SensorData_PassThrough(DEST_DEVID,SendData,sizeof(SendData));
+	    OSTimeDly(200);
+
+#endif
+
+#ifdef Devid_RestFul //http devid restful方式
+
+	   if(TCPClient_reset_flag == 1)
+	       RestFul_Run();
+
+#endif
+
 		PrintGMTTime();
-		OSTimeDly(700);
+		OSTimeDly(200);				
 	}
 }
 
+
+//tcp 发送心跳给ONENET保持链接。
 void HeartBeatThread(void *arg)
 {
 	while (1)

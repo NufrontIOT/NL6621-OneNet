@@ -46,10 +46,10 @@ static unsigned int domain_flag = 0;
 #define CLOUD_MUTEX_LOCK_PRIO		(11)
 #define REAL_CLOUD_TEST				(1)
 #define CLOUD_SERVER_DOMAIN			"jjfaedp.hedevice.com"
-#define CLOUD_SERVER_PORT_NUM		(876)
+#define CLOUD_SERVER_PORT_NUM		(876)	//(29876)//
 static int TCPClientFd = -1;
 NST_LOCK *cloud_send_mutex_lock = NULL;	/* cloud send data mutex lock */
-static unsigned int TCPClient_reset_flag = 0;
+unsigned char TCPClient_reset_flag = 0;
 
 
 /* 
@@ -145,9 +145,18 @@ int Socket_CreateTCPClient(void)
     int ret = 0;
     struct sockaddr_in server_addr;
 	char ipaddr[20] = {'\0'};
+	unsigned short prot = 0;
 
 AGAIN:
-	ret = NuAgent_GetHostByName((char *)CLOUD_SERVER_DOMAIN, ipaddr);
+#if   (4 & Devid_Mode)
+	 	ret = NuAgent_GetHostByName((char *)RESTFUL_SERVER_DOMAIN, ipaddr);
+		prot = RESTFUL_SERVER_PORT_NUM;
+#else
+		ret = NuAgent_GetHostByName((char *)CLOUD_SERVER_DOMAIN, ipaddr);
+		prot = CLOUD_SERVER_PORT_NUM;
+#endif
+
+
 	if (ret != 0) {
 		OSTimeDly(200);
 		log_warn("Get Domain name failed.\n");
@@ -163,7 +172,7 @@ AGAIN:
     memset(&server_addr, 0x0, sizeof(struct sockaddr_in));
 	memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero)); 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(CLOUD_SERVER_PORT_NUM);
+    server_addr.sin_port = htons(prot);
     server_addr.sin_addr.s_addr = inet_addr(ipaddr);
 
 	log_info("Cloud server:%s(port:%d, socketfd:%d).\n\n", 
@@ -172,11 +181,11 @@ AGAIN:
     ret = connect(TCPClientFd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)); 
     if (ret < 0) {
         log_err("Cloud server connected failed(ret:%d)\n", ret);
-        close(TCPClientFd);
+        Socket_TCPClientClose();
         return -1;
     }
 
-	TCPClient_reset_flag = 0;
+	TCPClient_reset_flag = 1;
 	return 0;
 }
 
@@ -185,24 +194,39 @@ int Socket_TCPClientSendData(char *sendbuf,	unsigned int len)
     int32 total  = 0;                                                                 
     int32 n = 0;
 	uint8 err = 0;
-	static int cloud_error_cnt = 0;
+	//static int cloud_error_cnt = 0;
+
+    fd_set writeset;
 	
 	OSMutexPend(cloud_send_mutex_lock, 0, &err);
     while (len != total)                                                              
-    {   		
-        n = send(TCPClientFd, (sendbuf + total), (len - total), 0);
-        if (n < 0)
+    { 
+	        /*套节字集合清空 */
+        FD_ZERO(&writeset);
+  
+        /*加入读写套接字集合*/
+        FD_SET(TCPClientFd, &writeset);
+  
+        /*检测套接字是否可写*/
+        if(select(TCPClientFd+1, NULL, &writeset, NULL, NULL) == -1)
+		    return -1;
+  
+        if(FD_ISSET(TCPClientFd, &writeset))
         {
-            log_err("Send TCP client data(len:%d, total:%d) ERROR.\n", len, total);
-			OSMutexPost(cloud_send_mutex_lock);
-			/* if send time error more than 5 timse, reset tcp connection */
-			cloud_error_cnt++;
-			if (cloud_error_cnt > 5) {
-				TCPClient_reset_flag = 0xa5;
-			}
-            return n;
-        }                                                    
-        total += n;
+		        n = send(TCPClientFd, (sendbuf + total), (len - total), 0);
+		        if (n < 0)
+		        {
+		            log_err("Send TCP client data(len:%d, total:%d) ERROR.\n", len, total);
+					OSMutexPost(cloud_send_mutex_lock);
+					/* if send time error more than 5 timse, reset tcp connection */
+					TCPClient_reset_flag = 0xa5;
+
+		            return n;
+		        }                                                    
+		        total += n;
+        }
+		  		
+     
     }	
 	OSMutexPost(cloud_send_mutex_lock);
 
@@ -215,7 +239,7 @@ int Socket_TCPClientRecvData(char *recvbuf, int len)
     int recv_count = 0;
     struct timeval tmv;
 
-    tmv.tv_sec = 2;	/* user can change this value */
+    tmv.tv_sec = 1;	/* user can change this value */
 	tmv.tv_usec = 0;    
     memset(recvbuf, 0, len);
     
@@ -234,7 +258,7 @@ int Socket_TCPClientRecvData(char *recvbuf, int len)
 		if((recv_count) < 0)
 		{
 			log_info("TCP client(%d) receive data failed(ret:%d).\n", TCPClientFd, recv_count);
-    		close(TCPClientFd);
+            Socket_TCPClientClose();
 			return -2;
 		}         
     }
@@ -243,7 +267,9 @@ int Socket_TCPClientRecvData(char *recvbuf, int len)
 
 int Socket_TCPClientClose(void)
 {
-    return close(TCPClientFd);
+    close(TCPClientFd);
+	TCPClientFd = -1;
+    return	0;
 }
 
 

@@ -199,5 +199,37 @@ unsigned int atou_hex(const char *s)
 
     return value;
 }
+//²éÕÒ×Ö·û´®
+int Search_str(char *source,char * chars)
+{
+	  int len=0;
+	  char *temp=chars;
+
+      if(source == NULL || chars == NULL || source == "" || chars == "")
+          return NULL;
+
+      while(*source != '\0'){
+		if(*source == *temp){
+			while(*temp != '\0'){
+				if(*temp == *source){
+					temp++;
+					source++;
+					len++;
+				}
+				else{
+					temp=chars;
+					break;
+				}								
+			}
+			if(*temp == '\0')
+				return len;
+		}
+		else{
+			source++;
+			len++;
+		}
+       }
+       return NULL;
+}
 
  

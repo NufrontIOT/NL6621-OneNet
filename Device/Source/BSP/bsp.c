@@ -305,7 +305,7 @@ VOID  BSP_Init (VOID)
     
     MPU_Init();
 
-    //BSP_I2CInit(E2PROM_ADDR); 
+    BSP_I2CInit(E2PROM_ADDR); 
 
 #ifdef HW_I2S_SUPPORT
     BSP_I2SInit();

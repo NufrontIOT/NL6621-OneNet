@@ -31,10 +31,10 @@
 ******************************************************************************
 */
 /* 
-    // ClkFreq is the clock speed (in MHz) that is being supplied to the
-    // DW_apb_i2c device.  The correct clock count values are determined
-    // by using this inconjunction with the minimum high and low signal
-    // hold times as per the I2C bus specification.
+ClkFreq is the clock speed (in MHz) that is being supplied to the
+DW_apb_i2c device.  The correct clock count values are determined
+by using this inconjunction with the minimum high and low signal
+hold times as per the I2C bus specification.
 #define SS_MIN_SCL_HIGH         4000
 #define SS_MIN_SCL_LOW          4700
 #define FS_MIN_SCL_HIGH         600
@@ -48,7 +48,6 @@
     HS_SclHigh = ((UINT16) (((HS_MIN_SCL_HIGH_100PF * ClkFreq) / 100)+ 1));
     HS_SclLow = ((UINT16) (((HS_MIN_SCL_LOW_100PF * ClkFreq) / 100) + 1));
 */
-
 VOID BSP_I2CInit(UINT8 TargetAdr)
 {
 // I2C pins can't used as GPIO

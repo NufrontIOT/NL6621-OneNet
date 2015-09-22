@@ -372,7 +372,7 @@
             <useFile>0</useFile>
             <TextAddressRange>0x08000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
-            <ScatterFile>.\scatter_jtag.scat</ScatterFile>
+            <ScatterFile>C:\Users\Administrator\Desktop\WIFI转Uart V1.40版本测试\NL6621_WIFI-Uart_SDK_V1.4\Project\PrjSdkRam\scatter_jtag.scat</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
             <Misc></Misc>
@@ -974,6 +974,11 @@
               <FileName>EdpKit.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Source\App\NuAgent\OneNet\EdpKit.c</FilePath>
+            </File>
+            <File>
+              <FileName>restful.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Source\App\NuAgent\OneNet\restful.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -145,7 +145,7 @@ static INT32 ifUpWhenDhcp()
     }
     netif_set_up(&netif);
 
-//    DBGPRINT(DEBUG_TRACE, "[DHCP] MY IP ADDRESS:%s \n", inet_ntoa(netif.ip_addr.addr));
+    DBGPRINT(DEBUG_TRACE, "[DHCP] MY IP ADDRESS:%s \n", inet_ntoa(netif.ip_addr.addr));
     return 0;
 }
 #endif

@@ -32,5 +32,6 @@ int strncmpi(const char *s1, const char *s2, size_t n);
 char* utoa(unsigned val, char *buf, int radix);
 char* itoa(int val, char *buf, int radix);
 unsigned int atou_hex(const char *s);
+int Search_str(char *source,char * chars);
 
 #endif   /* ----- #ifndef __STR_LIB_H__  ----- */

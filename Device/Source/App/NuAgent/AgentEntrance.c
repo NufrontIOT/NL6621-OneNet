@@ -45,14 +45,20 @@ void print_version(void)
 	);
 	log_notice("===================================================================\n\n");
 }
+//µ÷ÊÔÓÃµÄ
+extern unsigned char MyMacID[6];
+
 
 void nl6621_main_entry(void * pParam)
 {
-	unsigned char prioUser = TCPIP_THREAD_PRIO + 1;
-	
-	/* Print NuAgent version */			
-	print_version();
 
+	unsigned char prioUser = TCPIP_THREAD_PRIO + 1;
+
+    InfMacAddrSet(MyMacID);	
+	/* Print NuAgent version */			
+	print_version();	
+	
+				   
 	/* Create system indicator LED task thread */
 	sys_status.status = SYS_STATUS_WIFI_STOP;
 	sys_status.onboarding = SYS_STATUS_ONBOARDING_FAILED;		
@@ -66,7 +72,7 @@ void nl6621_main_entry(void * pParam)
 	 * login cloud. */
 	sys_thread_new("UdpServerThread", UdpServerThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 1));
 	sys_thread_new("TcpServerThread", TcpServerThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 2));
-	sys_thread_new("TcpCloudThread", TcpCloudThread, NULL, NST_TEST_APP_TASK_STK_SIZE * 4, (prioUser + 3));
+	sys_thread_new("TcpCloudThread", TcpCloudThread, NULL, NST_TEST_APP_TASK_STK_SIZE , (prioUser + 3));
 
 	/* Support user's private task, like NTP, OTA */
 	sys_thread_new("OtherTaskThread", OtherTaskThread, NULL, NST_TEST_APP_TASK_STK_SIZE, (prioUser + 4));
